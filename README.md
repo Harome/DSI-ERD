@@ -22,7 +22,7 @@ pip install -r requirements.txt
 
 3) Run the app:
 
-python app.py
+python dsi.py or py dsi.py
 
 Open http://127.0.0.1:5000 in a browser.
 
@@ -35,3 +35,4 @@ Notes
 Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force
 
 - You can use `py -3 -m pip install -r requirements.txt` if `pip` is not on PATH.
+
