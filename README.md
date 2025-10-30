@@ -36,3 +36,6 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force
 
 - You can use `py -3 -m pip install -r requirements.txt` if `pip` is not on PATH.
 
+Note: 
+    Any changes in the cloned repo will have colored line as seen in here.
+
