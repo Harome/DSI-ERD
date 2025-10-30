@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Students Table</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 90%;
+            margin: 20px auto;
+        }
+        th, td {
+            border: 1px solid #333;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even){
+            background-color: #f9f9f9;
+        }
+        button {
+            margin: 2px;
+            padding: 4px 8px;
+        }
+        form {
+            width: 90%;
+            margin: 20px auto;
+            padding: 10px;
+            border: 1px solid #333;
+            background-color: #f7f7f7;
+        }
+        input, select {
+            margin: 4px;
+            padding: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h2 style="text-align:center;">Students Table</h2>
+
+    <!-- CREATE FORM -->
+    <form id="createForm">
+        <h3>Create New Student</h3>
+        <input type="text" id="first_name" placeholder="First Name" required>
+        <input type="text" id="last_name" placeholder="Last Name" required>
+        <input type="text" id="middle_name" placeholder="Middle Name">
+        <input type="date" id="birth_date" placeholder="Birth Date">
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="text" id="student_type" placeholder="Student Type" value="regular">
+        <select id="program_id" required>
+            <option value="">-- Select Program --</option>
+            
+            {% for p in programs %}
+                <option value="{{ p._id }}">{{ p.program_code }} - {{ p.program_name }}</option>
+            {% endfor %}
+
+        </select>
+        <select id="active">
+            <option value="true">Active</option>
+            <option value="false">Inactive</option>
+        </select>
+        <button type="submit">Create</button>
+    </form>
+
+    <!-- STUDENTS TABLE -->
+    <table id="studentsTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Middle Name</th>
+                <th>Birth Date</th>
+                <th>Email</th>
+                <th>Student Type</th>
+                <th>Program ID</th>
+                <th>Active</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in students %}
+            <tr id="row-{{ s._id }}">
+                <td>{{ s._id }}</td>
+                <td contenteditable="true">{{ s.first_name }}</td>
+                <td contenteditable="true">{{ s.last_name }}</td>
+                <td contenteditable="true">{{ s.middle_name }}</td>
+                <td contenteditable="true">{{ s.birth_date }}</td>
+                <td contenteditable="true">{{ s.email }}</td>
+                <td contenteditable="true">{{ s.student_type }}</td>
+                <td contenteditable="true">{{ s.program_id }}</td>
+                <td contenteditable="true">{{ s.active }}</td>
+                <td>
+                    <button onclick="updateStudent('{{ s._id }}', this)">Update</button>
+                    <button onclick="deleteStudent('{{ s._id }}')">Delete</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+<script>
+// --- CREATE student ---
+document.getElementById("createForm").addEventListener("submit", function(e){
+    e.preventDefault();
+
+    const data = {
+        first_name: document.getElementById("first_name").value,
+        last_name: document.getElementById("last_name").value,
+        middle_name: document.getElementById("middle_name").value,
+        birth_date: document.getElementById("birth_date").value,
+        email: document.getElementById("email").value,
+        student_type: document.getElementById("student_type").value,
+        program_id: document.getElementById("program_id").value,
+        active: document.getElementById("active").value === "true"
+    };
+
+    fetch('/students', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(res => {
+        if(res.student){
+            alert("Student created successfully!");
+            addRow(res.student); // dynamically add new row
+            this.reset();
+        } else {
+            alert(res.error);
+        }
+    })
+    .catch(err => alert("Error: " + err));
+});
+
+// --- DYNAMICALLY ADD ROW ---
+function addRow(student){
+    const table = document.getElementById("studentsTable").getElementsByTagName('tbody')[0];
+    const row = table.insertRow();
+    row.id = `row-${student._id}`;
+    row.innerHTML = `
+        <td>${student._id}</td>
+        <td contenteditable="true">${student.first_name}</td>
+        <td contenteditable="true">${student.last_name}</td>
+        <td contenteditable="true">${student.middle_name}</td>
+        <td contenteditable="true">${student.birth_date || ""}</td>
+        <td contenteditable="true">${student.email}</td>
+        <td contenteditable="true">${student.student_type}</td>
+        <td contenteditable="true">${student.program_id || ""}</td>
+        <td contenteditable="true">${student.active}</td>
+        <td>
+            <button onclick="updateStudent('${student._id}', this)">Update</button>
+            <button onclick="deleteStudent('${student._id}')">Delete</button>
+        </td>
+    `;
+}
+
+// --- UPDATE student ---
+function updateStudent(studentId, btn) {
+    const row = btn.closest('tr');
+    const data = {
+        first_name: row.cells[1].innerText,
+        last_name: row.cells[2].innerText,
+        middle_name: row.cells[3].innerText,
+        birth_date: row.cells[4].innerText,
+        email: row.cells[5].innerText,
+        student_type: row.cells[6].innerText,
+        program_id: row.cells[7].innerText || null,
+        active: row.cells[8].innerText.toLowerCase() === 'true'
+    };
+
+    fetch(`/student/${studentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(res => {
+        if(res.student){
+            alert("Student updated successfully!");
+        } else {
+            alert(res.error);
+        }
+    })
+    .catch(err => alert("Error: " + err));
+}
+
+// --- DELETE student ---
+function deleteStudent(studentId) {
+    if (!confirm("Are you sure you want to delete this student?")) return;
+
+    fetch(`/student/${studentId}`, { method: 'DELETE' })
+    .then(response => response.json())
+    .then(res => {
+        if(res.message){
+            document.getElementById(`row-${studentId}`).remove();
+            alert(res.message);
+        } else {
+            alert(res.error);
+        }
+    })
+    .catch(err => alert("Error: " + err));
+}
+</script>
+
+</body>
+</html>
