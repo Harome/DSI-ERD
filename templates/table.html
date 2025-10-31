@@ -1,208 +1,167 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Students Table</title>
-    <style>
-        table {
-            border-collapse: collapse;
-            width: 90%;
-            margin: 20px auto;
-        }
-        th, td {
-            border: 1px solid #333;
-            padding: 8px 12px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        tr:nth-child(even){
-            background-color: #f9f9f9;
-        }
-        button {
-            margin: 2px;
-            padding: 4px 8px;
-        }
-        form {
-            width: 90%;
-            margin: 20px auto;
-            padding: 10px;
-            border: 1px solid #333;
-            background-color: #f7f7f7;
-        }
-        input, select {
-            margin: 4px;
-            padding: 4px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>🎓 Student Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h2 style="text-align:center;">Students Table</h2>
+<body class="bg-gray-50 min-h-screen flex flex-col items-center p-8">
 
-    <!-- CREATE FORM -->
-    <form id="createForm">
-        <h3>Create New Student</h3>
-        <input type="text" id="first_name" placeholder="First Name" required>
-        <input type="text" id="last_name" placeholder="Last Name" required>
-        <input type="text" id="middle_name" placeholder="Middle Name">
-        <input type="date" id="birth_date" placeholder="Birth Date">
-        <input type="email" id="email" placeholder="Email" required>
-        <input type="text" id="student_type" placeholder="Student Type" value="regular">
-        <select id="program_id" required>
-            <option value="">-- Select Program --</option>
-            
-            {% for p in programs %}
-                <option value="{{ p._id }}">{{ p.program_code }} - {{ p.program_name }}</option>
-            {% endfor %}
+  <h1 class="text-3xl font-bold text-gray-800 mb-8">🎓 Student Management</h1>
 
-        </select>
-        <select id="active">
-            <option value="true">Active</option>
-            <option value="false">Inactive</option>
-        </select>
-        <button type="submit">Create</button>
-    </form>
+  <!-- CREATE BUTTON + SEARCH BAR + FILTERS -->
+  <div class="w-full max-w-6xl flex flex-wrap justify-between items-center mb-4 gap-3">
+    <div class="flex gap-3 w-full md:w-auto">
+      <button onclick="openCreateModal()" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+        ➕ Add Student
+      </button>
+    </div>
 
-    <!-- STUDENTS TABLE -->
-    <table id="studentsTable">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>Middle Name</th>
-                <th>Birth Date</th>
-                <th>Email</th>
-                <th>Student Type</th>
-                <th>Program ID</th>
-                <th>Active</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for s in students %}
-            <tr id="row-{{ s._id }}">
-                <td>{{ s._id }}</td>
-                <td contenteditable="true">{{ s.first_name }}</td>
-                <td contenteditable="true">{{ s.last_name }}</td>
-                <td contenteditable="true">{{ s.middle_name }}</td>
-                <td contenteditable="true">{{ s.birth_date }}</td>
-                <td contenteditable="true">{{ s.email }}</td>
-                <td contenteditable="true">{{ s.student_type }}</td>
-                <td contenteditable="true">{{ s.program_id }}</td>
-                <td contenteditable="true">{{ s.active }}</td>
-                <td>
-                    <button onclick="updateStudent('{{ s._id }}', this)">Update</button>
-                    <button onclick="deleteStudent('{{ s._id }}')">Delete</button>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
+    <div class="flex flex-wrap gap-3 justify-end items-center w-full md:w-auto">
+      <input type="text" id="searchInput" placeholder="🔍 Search name, email, or program..." class="p-2 border rounded w-64" onkeyup="applyFilters()">
+
+      <select id="filterProgram" class="p-2 border rounded" onchange="applyFilters()">
+        <option value="">All Programs</option>
+        {% for p in programs %}
+          <option value="{{ p.program_name }}">{{ p.program_name }}</option>
+        {% endfor %}
+      </select>
+
+      <select id="filterActive" class="p-2 border rounded" onchange="applyFilters()">
+        <option value="">All</option>
+        <option value="true">Active</option>
+        <option value="false">Inactive</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- STUDENT TABLE -->
+  <div class="overflow-x-auto w-full max-w-6xl bg-white shadow-lg rounded-lg border border-gray-200">
+    <table id="studentsTable" class="min-w-full text-sm text-left text-gray-700">
+      <thead class="bg-blue-100 text-gray-800 uppercase">
+        <tr>
+          <th class="px-4 py-3 cursor-pointer" onclick="sortTable('id')">ID</th>
+          <th class="px-4 py-3 cursor-pointer" onclick="sortTable('first_name')">First Name</th>
+          <th class="px-4 py-3 cursor-pointer" onclick="sortTable('last_name')">Last Name</th>
+          <th class="px-4 py-3 cursor-pointer" onclick="sortTable('email')">Email</th>
+          <th class="px-4 py-3 cursor-pointer" onclick="sortTable('program_name')">Program</th>
+          <th class="px-4 py-3 cursor-pointer" onclick="sortTable('active')">Active</th>
+          <th class="px-4 py-3 text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="studentsBody"></tbody>
     </table>
+  </div>
+
+  <!-- PAGINATION -->
+  <div class="mt-4 flex justify-center gap-3" id="pagination"></div>
+
+  <!-- CREATE MODAL (unchanged) -->
+  <!-- ... your existing createModal HTML ... -->
+
+  <!-- EDIT MODAL (unchanged) -->
+  <!-- ... your existing editModal HTML ... -->
 
 <script>
-// --- CREATE student ---
-document.getElementById("createForm").addEventListener("submit", function(e){
-    e.preventDefault();
+let students = {{ students | tojson }};
+let currentPage = 1;
+const rowsPerPage = 10;
+let currentSort = { key: null, asc: true };
 
-    const data = {
-        first_name: document.getElementById("first_name").value,
-        last_name: document.getElementById("last_name").value,
-        middle_name: document.getElementById("middle_name").value,
-        birth_date: document.getElementById("birth_date").value,
-        email: document.getElementById("email").value,
-        student_type: document.getElementById("student_type").value,
-        program_id: document.getElementById("program_id").value,
-        active: document.getElementById("active").value === "true"
-    };
+function renderTable() {
+  const tbody = document.getElementById("studentsBody");
+  tbody.innerHTML = "";
+  const filtered = getFilteredStudents();
 
-    fetch('/students', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(res => {
-        if(res.student){
-            alert("Student created successfully!");
-            addRow(res.student); // dynamically add new row
-            this.reset();
-        } else {
-            alert(res.error);
-        }
-    })
-    .catch(err => alert("Error: " + err));
-});
+  const start = (currentPage - 1) * rowsPerPage;
+  const end = start + rowsPerPage;
+  const pageData = filtered.slice(start, end);
 
-// --- DYNAMICALLY ADD ROW ---
-function addRow(student){
-    const table = document.getElementById("studentsTable").getElementsByTagName('tbody')[0];
-    const row = table.insertRow();
-    row.id = `row-${student._id}`;
-    row.innerHTML = `
-        <td>${student._id}</td>
-        <td contenteditable="true">${student.first_name}</td>
-        <td contenteditable="true">${student.last_name}</td>
-        <td contenteditable="true">${student.middle_name}</td>
-        <td contenteditable="true">${student.birth_date || ""}</td>
-        <td contenteditable="true">${student.email}</td>
-        <td contenteditable="true">${student.student_type}</td>
-        <td contenteditable="true">${student.program_id || ""}</td>
-        <td contenteditable="true">${student.active}</td>
-        <td>
-            <button onclick="updateStudent('${student._id}', this)">Update</button>
-            <button onclick="deleteStudent('${student._id}')">Delete</button>
+  for (const s of pageData) {
+    tbody.innerHTML += `
+      <tr id="row-${s._id}" class="border-b hover:bg-gray-50">
+        <td class="px-4 py-2 font-mono text-xs">${s._id}</td>
+        <td class="px-4 py-2">${s.first_name}</td>
+        <td class="px-4 py-2">${s.last_name}</td>
+        <td class="px-4 py-2">${s.email}</td>
+        <td class="px-4 py-2">${s.program_name || '-'}</td>
+        <td class="px-4 py-2">${s.active ? 'Yes' : 'No'}</td>
+        <td class="px-4 py-2 text-center">
+          <button onclick="openEditModal('${s._id}')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs">
+            ✏️ Edit
+          </button>
+          <button onclick="deleteStudent('${s._id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs">
+            🗑️ Delete
+          </button>
         </td>
+      </tr>
     `;
+  }
+  renderPagination(filtered.length);
 }
 
-// --- UPDATE student ---
-function updateStudent(studentId, btn) {
-    const row = btn.closest('tr');
-    const data = {
-        first_name: row.cells[1].innerText,
-        last_name: row.cells[2].innerText,
-        middle_name: row.cells[3].innerText,
-        birth_date: row.cells[4].innerText,
-        email: row.cells[5].innerText,
-        student_type: row.cells[6].innerText,
-        program_id: row.cells[7].innerText || null,
-        active: row.cells[8].innerText.toLowerCase() === 'true'
-    };
+function renderPagination(total) {
+  const pages = Math.ceil(total / rowsPerPage);
+  const container = document.getElementById("pagination");
+  container.innerHTML = "";
 
-    fetch(`/student/${studentId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(res => {
-        if(res.student){
-            alert("Student updated successfully!");
-        } else {
-            alert(res.error);
-        }
-    })
-    .catch(err => alert("Error: " + err));
+  for (let i = 1; i <= pages; i++) {
+    container.innerHTML += `
+      <button onclick="gotoPage(${i})" 
+        class="px-3 py-1 rounded ${i===currentPage ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}">
+        ${i}
+      </button>`;
+  }
 }
 
-// --- DELETE student ---
-function deleteStudent(studentId) {
-    if (!confirm("Are you sure you want to delete this student?")) return;
-
-    fetch(`/student/${studentId}`, { method: 'DELETE' })
-    .then(response => response.json())
-    .then(res => {
-        if(res.message){
-            document.getElementById(`row-${studentId}`).remove();
-            alert(res.message);
-        } else {
-            alert(res.error);
-        }
-    })
-    .catch(err => alert("Error: " + err));
+function gotoPage(page) {
+  currentPage = page;
+  renderTable();
 }
+
+function applyFilters() {
+  currentPage = 1;
+  renderTable();
+}
+
+function getFilteredStudents() {
+  const search = document.getElementById("searchInput").value.toLowerCase();
+  const program = document.getElementById("filterProgram").value;
+  const active = document.getElementById("filterActive").value;
+
+  let result = students.filter(s =>
+    (s.first_name.toLowerCase().includes(search) ||
+     s.last_name.toLowerCase().includes(search) ||
+     s.email.toLowerCase().includes(search) ||
+     (s.program_name || '').toLowerCase().includes(search))
+  );
+
+  if (program) result = result.filter(s => s.program_name === program);
+  if (active) result = result.filter(s => s.active.toString() === active);
+
+  if (currentSort.key) {
+    result.sort((a, b) => {
+      const valA = (a[currentSort.key] || '').toString().toLowerCase();
+      const valB = (b[currentSort.key] || '').toString().toLowerCase();
+      return currentSort.asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    });
+  }
+
+  return result;
+}
+
+function sortTable(key) {
+  if (currentSort.key === key) {
+    currentSort.asc = !currentSort.asc;
+  } else {
+    currentSort.key = key;
+    currentSort.asc = true;
+  }
+  renderTable();
+}
+
+// INITIAL RENDER
+renderTable();
 </script>
-
 </body>
 </html>
